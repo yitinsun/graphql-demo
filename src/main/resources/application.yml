@@ -1,0 +1,25 @@
+spring:
+  application.name: graphql-demo
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/shop}
+    username: ${DB_USER:shop}
+    password: ${DB_PASSWORD:shop}
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: validate      # schema is owned by Flyway
+  graphql:
+    path: /graphql
+    graphiql.enabled: true            # http://localhost:8080/graphiql (disable in production)
+    schema.printer.enabled: true      # http://localhost:8080/graphql/schema
+  cache:
+    type: caffeine
+    caffeine.spec: maximumSize=500,expireAfterWrite=60s   # Contentful responses are cached for 60s
+
+contentful:
+  space-id: ${CONTENTFUL_SPACE_ID:}
+  environment: ${CONTENTFUL_ENV:master}
+  token: ${CONTENTFUL_TOKEN:}         # Content Delivery API token (or Preview token when preview=true)
+  preview: ${CONTENTFUL_PREVIEW:false}
+  timeout: 5s
+  # allow-list for the generic `entries` query: nothing else can be read through it
+  allowed-content-types: article,productContent

@@ -1,0 +1,102 @@
+scalar JSON
+
+type Query {
+    # ---- PostgreSQL ----
+    products(filter: ProductFilter, sort: ProductSort = NAME_ASC, page: Int = 0, size: Int = 20): ProductPage!
+    product(id: ID!): Product
+
+    # ---- Contentful (typed) ----
+    articles(filter: ArticleFilter, limit: Int = 10, skip: Int = 0): [Article!]!
+    article(slug: String!): Article
+
+    # ---- Contentful (fully dynamic: any allowed content type, any field filter / projection / order) ----
+    entries(
+        contentType: String!
+        filters: [EntryFilter!]
+        select: [String!]
+        order: [String!]
+        limit: Int = 10
+        skip: Int = 0
+    ): EntryPage!
+}
+
+# ===== PostgreSQL side =====
+enum ProductSort { NAME_ASC PRICE_ASC PRICE_DESC NEWEST }
+
+input ProductFilter {
+    category: String
+    minPrice: Float
+    maxPrice: Float
+    inStock: Boolean
+    search: String
+}
+
+type ProductPage {
+    items: [Product!]!
+    totalElements: Int!
+    totalPages: Int!
+    page: Int!
+}
+
+type Product {
+    id: ID!
+    sku: String!
+    name: String!
+    category: String!
+    price: Float!
+    stock: Int!
+    createdAt: String!
+    "Marketing content from Contentful, joined by SKU (batched: one Contentful call per page of products)"
+    content: ProductContent
+}
+
+# ===== Contentful side =====
+type ProductContent {
+    sku: String!
+    title: String
+    description: String
+    imageUrl: String
+    features: [String!]!
+}
+
+input ArticleFilter {
+    titleContains: String
+    "ISO-8601 timestamp, e.g. 2026-01-01T00:00:00Z"
+    publishedAfter: String
+    productSku: String
+}
+
+type Article {
+    id: ID!
+    title: String
+    slug: String!
+    body: String
+    publishedAt: String
+    "Products (PostgreSQL) whose SKUs are listed on the article in Contentful"
+    relatedProducts: [Product!]!
+}
+
+enum FilterOperator { EQ NE IN NIN MATCH GT GTE LT LTE EXISTS }
+
+input EntryFilter {
+    "Field id, e.g. title or sys.id (the 'fields.' prefix is optional)"
+    field: String!
+    operator: FilterOperator = EQ
+    "For IN / NIN use a comma separated list"
+    value: String!
+}
+
+type Entry {
+    id: ID!
+    contentType: String!
+    updatedAt: String
+    "Raw field map with links to assets/entries already resolved"
+    fields: JSON!
+}
+
+type EntryPage {
+    items: [Entry!]!
+    total: Int!
+    skip: Int!
+    limit: Int!
+}
